@@ -174,9 +174,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             cgen.stdin.write('\n');
 
                         if(chunk.toString().includes('Serialization Complete, took: ')){
-                            cgen.kill(0);
                             document.querySelector('.log-bar').innerHTML = '🟠 No Tasks.';
-                            ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Finished Generating Codegen Headers' }));
+                            ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Finished Generating Codegen Headers, Attempting to setup files, THIS MAY TAKE A WHILE' }));
+
+                            cgen.kill(0);
                     
                             document.querySelector('.log-bar').innerHTML = '🟢 Setting Up Files...';
                             ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Reformatting for Codegen Browser so we don\'t use 4gb of your ram while your trying to browse' }));
@@ -310,6 +311,28 @@ ipcRenderer.on('fetchConfig', ( e, config ) => {
     config.versions.forEach(ver => {
         document.getElementById(ver.name+'-loadbtn').onclick = () => {
             currentVersion = ver.path;
+
+            if(!fs.existsSync(__filepath + '/data/codegen/names/'+ver.path+'.json')){
+                let notif = document.createElement('div');
+                notif.className = 'update-notification';
+                notif.innerHTML = 'Cannot find version data, Are you sure you finished installing this version? Try re-installing it.';
+
+                document.body.appendChild(notif);
+
+                setTimeout(() => {
+                    notif.style.right = '10px';
+
+                    setTimeout(() => {
+                        notif.style.right = '-100%';
+
+                        setTimeout(() => {
+                            notif.remove();
+                        }, 250);
+                    }, 5000);
+                }, 10)
+                return;
+            }
+
             let names = fs.readFileSync(__filepath + '/data/codegen/names/'+ver.path+'.json').toString();
             console.log(names);
 

@@ -5,10 +5,11 @@ const path = require('path');
 
 let config = {
     appVersion: '0.0.1',
-    versions: [],
     position: { x: 0, y: 0 },
     devBuild: false
 }
+
+let versions = [];
 
 if(!fs.existsSync(__dirname + '/config.json'))  
     fs.writeFileSync(__dirname + '/config.json', JSON.stringify(config));
@@ -20,6 +21,19 @@ if(!config.devBuild)shortcuts.create('%APPDATA%/Microsoft/Windows/Start Menu/Pro
     desc: 'Codegen Browser',
     icon: __dirname + '/imgs/browser.png'
 });
+
+let __filepath = path.join(__dirname, '../../../../data')
+
+if(config.devBuild)
+    __filepath = path.join(__dirname, '../data')
+
+if(!fs.existsSync(__filepath))
+    fs.mkdirSync(__filepath)
+
+if(!fs.existsSync(__filepath + '/versions.json'))
+    fs.writeFileSync(__filepath + '/versions.json', JSON.stringify(versions));
+else
+    versions = JSON.parse(fs.readFileSync(__filepath + '/versions.json'));
 
 let logs = [];
 let win;
@@ -64,7 +78,7 @@ app.on('ready', () => {
     })
 
     ipcMain.on('fetchConfig', () => {
-        win.webContents.send('fetchConfig', JSON.stringify(config));
+        win.webContents.send('fetchConfig', JSON.stringify({ versions: versions }));
     })
 
     ipcMain.on('log', ( e, log ) => {
@@ -74,8 +88,8 @@ app.on('ready', () => {
 
     ipcMain.on('config', ( e, cmd, value ) => {
         if(cmd === 'addVersion'){
-            config.versions.push(value)
-            fs.writeFileSync(__dirname + '/config.json', JSON.stringify(config));
+            versions.push(value)
+            fs.writeFileSync(__filepath + '/versions.json', JSON.stringify(versions));
         }
     })
 
