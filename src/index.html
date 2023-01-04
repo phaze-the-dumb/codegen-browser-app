@@ -1,0 +1,109 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="./styles.css">
+    </head>
+    <body>
+        <div class="control-bar">
+            <div class="drag-bar"></div>
+            <div class="log-bar">🟠 No Tasks.</div>
+            <div class="minimise-container"><div class="minimise-btn"></div></div>
+            <div class="close-container"><div class="close-btn"></div></div>
+        </div>
+
+        <div class="log-box">
+            <h3>Logs</h3>
+            <div class="log-close close-container"><div class="log-close-btn"></div></div>
+            <div class="logs-container"></div>
+        </div>
+
+        <div class="menu-box">
+            <div class="menu-item" body="1">
+                <div class="item-tooltip">Settings</div>
+                <div class="menu-icon-gear"></div>
+            </div>
+            <div class="menu-item" link="https://docs.phazed.xyz/codegenbrowser">
+                <div class="item-tooltip">Help</div>
+                <div class="menu-icon-help"></div>
+            </div>
+            <div class="menu-item" body="2">
+                <div class="item-tooltip">Add Version</div>
+                <div class="menu-icon-add"></div>
+            </div>
+            <div class="menu-item" body="3" id="versionInsaller" style="display: none;">
+                <div class="item-tooltip">Version Installer</div>
+                <div class="menu-icon-cmd"></div>
+            </div>
+            <div class="menu-item" body="4" id="browser-item">
+                <div class="item-tooltip">Browser</div>
+                <div class="menu-icon-browser"></div>
+            </div>
+        </div>
+
+        <div class="body-welcome body">
+            <h1>Welcome!</h1><br />
+
+            <p>Learn how to use this software <span class="link" link="https://docs.phazed.xyz/codegenbrowser">here</span></p>
+        </div>
+
+        <div class="body-settings body">
+            <h1>Settings</h1><br />
+        </div>
+
+        <div class="body-addversion body">
+            <h1>Add Version</h1><br />
+
+            Version Label:
+            <input placeholder="e.g. 1.27.0" type="text" id="version-name" oninput="checkVersion(this.value);"><br /><br />
+            <span id="version-warning"></span><br /><br />
+
+            <span class="link" link="https://oculusdb.rui2015.me/id/2448060205267927">APK Download Link</span>
+
+            <label for="apkupload">
+                <div class="version-upload">
+                    <div>
+                        <img src="./imgs/file.png" style="height: 25%;">
+                        <h2 id="filename">Upload Apk</h2>
+                        <p style="font-size: 12px;">This only uploads to your local machine</p>
+                    </div>
+                </div>
+            </label>
+
+            <input type="file" id="apkupload" multiple="false" oninput="checkAPK(this)">
+            
+            <div class="next-btn">></div>
+            <div class="next-btn-top"></div>
+            <div class="next-btn-bottom"></div>
+        </div>
+
+        <div class="body-addedversion body">
+            <br /><br /><span class="loader"></span>
+            <h2>Computing File...</h2>
+
+            <div class="logs-container" style="height: 50%; width: 50%; display: inline-block;"></div>
+        </div>
+
+        <div class="body-browser body">
+            <div class="version-list"></div>
+            <div class="names-list">
+                <input class="search" type="text" placeholder="Search..." id="name-search">
+
+                <div class="names-container">
+                    No Version Selected
+                </div>
+            </div>
+
+            <div class="width-selector"></div>
+
+            <div class="class-container">
+                No Class Selected
+            </div>
+        </div>
+
+        <div class="body-hsource body">
+            <div class="code-header"></div>
+            <div class="code" id="header-file" style="width: 100%; height: calc(100% - 50px); overflow: auto; margin-top: 50px;"></div>
+        </div>
+
+        <script src="./main.js"></script>
+    </body>
+</html>
