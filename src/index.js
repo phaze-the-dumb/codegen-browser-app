@@ -4,7 +4,7 @@ const shortcuts = require('windows-shortcuts');
 const path = require('path');
 
 let config = {
-    appVersion: '0.0.1',
+    appVersion: '0.1.2-beta',
     position: { x: 0, y: 0 },
     devBuild: false
 }
