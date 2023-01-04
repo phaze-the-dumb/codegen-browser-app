@@ -448,7 +448,7 @@ let getNamespace = ( ns ) => {
     else if(ns === '')
         return 'GlobalNamespace.';
     else
-        return ns + '.';
+        return ns;
 }
 
 let formatJSON = (json) => {
