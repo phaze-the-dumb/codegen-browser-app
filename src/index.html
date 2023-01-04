@@ -3,6 +3,7 @@
         <link rel="stylesheet" href="./styles.css">
     </head>
     <body>
+        <div class="version-information">Codegen Browser | Version: Unknown</div>
         <div class="control-bar">
             <div class="drag-bar"></div>
             <div class="log-bar">🟠 No Tasks.</div>
@@ -47,6 +48,11 @@
 
         <div class="body-settings body">
             <h1>Settings</h1><br />
+
+            <p>
+                Install Location: <span id="setting-installlocation"></span><br />
+                Data Location: <span id="setting-datalocation"></span><br />
+            </p>
         </div>
 
         <div class="body-addversion body">
@@ -56,6 +62,10 @@
             <input placeholder="e.g. 1.27.0" type="text" id="version-name" oninput="checkVersion(this.value);"><br /><br />
             <span id="version-warning"></span><br /><br />
 
+            <span id="dotnet-installed" style="color: rgb(146, 0, 0);">
+                Dotnet is not installed you <b>will</b> run into errors while trying to add a version<br />
+                <span class="link" link="https://dotnet.microsoft.com/en-us/download">Install dotnet here</span><br /><br />
+            </span>
             <span class="link" link="https://oculusdb.rui2015.me/id/2448060205267927">APK Download Link</span>
 
             <label for="apkupload">

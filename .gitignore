@@ -3,6 +3,8 @@ src/data/codegen
 src/data/apks
 src/data/extracted
 src/data/il2cpp/dummydll
+src/data/il2cpp/dump.cs
+data/
 
 # Logs
 logs

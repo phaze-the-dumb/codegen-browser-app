@@ -5,10 +5,19 @@ const util = require('util');
 const fs = require('fs');
 const extract = require('extract-zip');
 const Convert = require('ansi-to-html');
+const path = require('path');
 
 let convert = new Convert();
 let nameLists = [];
 let currentVersion = null;
+let devBuild = require('./config.json').devBuild;
+let __filepath = path.join(__dirname, '../../../../data')
+
+if(devBuild)
+    __filepath = path.join(__dirname, '../data')
+
+if(!fs.existsSync(__filepath))
+    fs.mkdirSync(__filepath)
 
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('.minimise-container').onclick = () => ipcRenderer.send('minimise');
@@ -17,6 +26,24 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.log-box').style.left = '50%';
     document.querySelector('.log-close').onclick = () => 
         document.querySelector('.log-box').style.left = '150%';
+
+    if(devBuild){
+        document.querySelector('#setting-installlocation').innerText = __dirname;
+        document.querySelector('#setting-datalocation').innerText = __filepath;
+    } else{
+        document.querySelector('#setting-installlocation').remove();
+        document.querySelector('#setting-datalocation').remove();
+    }
+
+    let dotnetTest = spawn('dotnet');
+    let didDotnetError = false;
+
+    dotnetTest.on('error', () => didDotnetError = true);
+
+    dotnetTest.on('close', ( code ) => {
+        if(!didDotnetError)
+            document.querySelector('#dotnet-installed').style.display = 'none';
+    })
 
     document.querySelector('#browser-item').addEventListener('click', () => {
         ipcRenderer.send('fetchConfig');
@@ -40,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
     }
 
+    document.querySelector('.version-information').innerHTML = 'Codegen Browser | Version: '+require('./config.json').appVersion;
     document.querySelectorAll('[link]').forEach(link => 
         link.onclick = () => 
             ipcRenderer.send('openLink', link.getAttribute('link')));
@@ -72,19 +100,19 @@ document.addEventListener('DOMContentLoaded', () => {
         let nameInput = document.querySelector('#version-name');
 
         reader.onload = () => {
-            if(!fs.existsSync(__dirname + '/data/apks'))
-                fs.mkdirSync(__dirname + '/data/apks', { recursive: true });
+            if(!fs.existsSync(__filepath + '/data/apks'))
+                fs.mkdirSync(__filepath + '/data/apks', { recursive: true });
 
-            if(!fs.existsSync(__dirname + '/data/extracted'))
-                fs.mkdirSync(__dirname + '/data/extracted', { recursive: true });
+            if(!fs.existsSync(__filepath + '/data/extracted'))
+                fs.mkdirSync(__filepath + '/data/extracted', { recursive: true });
 
-            if(!fs.existsSync(__dirname + '/data/codegen'))
-                fs.mkdirSync(__dirname + '/data/codegen', { recursive: true });
+            if(!fs.existsSync(__filepath + '/data/codegen'))
+                fs.mkdirSync(__filepath + '/data/codegen', { recursive: true });
 
-            if(!fs.existsSync(__dirname + '/data/codegen/names'))
-                fs.mkdirSync(__dirname + '/data/codegen/names', { recursive: true });
+            if(!fs.existsSync(__filepath + '/data/codegen/names'))
+                fs.mkdirSync(__filepath + '/data/codegen/names', { recursive: true });
 
-            fs.writeFileSync(__dirname + '/data/apks/' + nameInput.value + input.files[0].name.replace('.apk', '.zip'), Buffer.from(reader.result));
+            fs.writeFileSync(__filepath + '/data/apks/' + nameInput.value + input.files[0].name.replace('.apk', '.zip'), Buffer.from(reader.result));
 
             document.querySelector('.log-bar').innerHTML = '🟠 No Tasks.';
             ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'APK Uploaded' }));
@@ -95,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelector('.log-bar').innerHTML = '🟢 Extracting APK...';
             ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Extracting APK' }));
 
-            extract(__dirname + '/data/apks/' + nameInput.value + input.files[0].name.replace('.apk', '.zip'), { dir: __dirname + '/data/extracted/'+nameInput.value + input.files[0].name.replace('.apk', '')}).then(() => {
+            extract(__filepath + '/data/apks/' + nameInput.value + input.files[0].name.replace('.apk', '.zip'), { dir: __filepath + '/data/extracted/'+nameInput.value + input.files[0].name.replace('.apk', '')}).then(() => {
                 document.querySelector('.log-bar').innerHTML = '🟠 No Tasks.';
                 ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Finished Extracting APK' }));
 
@@ -104,8 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 let il2cpp = spawn('dotnet', [
                     __dirname + '/data/il2cpp/Il2CppDumper.dll',
-                    __dirname + '/data/extracted/'+nameInput.value + input.files[0].name.replace('.apk', '')+'/assets/bin/Data/Managed/Metadata/global-metadata.dat',
-                    __dirname + '/data/extracted/'+nameInput.value + input.files[0].name.replace('.apk', '')+'/lib/arm64-v8a/libil2cpp.so'
+                    __filepath + '/data/extracted/'+nameInput.value + input.files[0].name.replace('.apk', '')+'/assets/bin/Data/Managed/Metadata/global-metadata.dat',
+                    __filepath + '/data/extracted/'+nameInput.value + input.files[0].name.replace('.apk', '')+'/lib/arm64-v8a/libil2cpp.so'
                 ]);
 
                 il2cpp.stdout.on('data', ( chunk ) => {
@@ -123,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.querySelector('.log-bar').innerHTML = '🟢 Generating Codegen Headers';
                     ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Generating Codegen Headers' }));
 
-                    let cgen = spawn('dotnet', [ __dirname + '/data/cgen/Codegen-CLI.dll' ], { cwd: __dirname + '/data/codegen' });
+                    let cgen = spawn('dotnet', [ __dirname + '/data/cgen/Codegen-CLI.dll' ], { cwd: __filepath + '/data/codegen' });
 
                     let i = 0;
                     cgen.stdout.on('data', ( chunk ) => {
@@ -141,14 +169,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             document.querySelector('.log-bar').innerHTML = '🟢 Setting Up Files...';
                             ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Reformatting for Codegen Browser so we don\'t use 4gb of your ram while your trying to browse' }));
                         
-                            fs.mkdirSync(__dirname + '/data/codegen/data/'+nameInput.value + input.files[0].name.replace('.apk', ''), { recursive: true });
-                            fs.mkdirSync(__dirname + '/data/codegen/cpp/'+nameInput.value + input.files[0].name.replace('.apk', ''), { recursive: true });
+                            fs.mkdirSync(__filepath + '/data/codegen/data/'+nameInput.value + input.files[0].name.replace('.apk', ''), { recursive: true });
+                            fs.mkdirSync(__filepath + '/data/codegen/cpp/'+nameInput.value + input.files[0].name.replace('.apk', ''), { recursive: true });
 
                             document.querySelector('.log-bar').innerHTML = '🟢 Moving Header Files...';
-                            fse.copySync(__dirname + '/data/codegen/output/include', __dirname + '/data/codegen/cpp/'+nameInput.value + input.files[0].name.replace('.apk', ''));
+                            fse.copySync(__filepath + '/data/codegen/output/include', __filepath + '/data/codegen/cpp/'+nameInput.value + input.files[0].name.replace('.apk', ''));
 
                             document.querySelector('.log-bar').innerHTML = '🟢 Parsing JSON...';
-                            const parsed = require(__dirname + '/data/codegen/json_output/parsed.json');
+                            const parsed = require(__filepath + '/data/codegen/json_output/parsed.json');
                             let names = [];
 
                             parsed.Types.forEach((type, i) => {
@@ -172,14 +200,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                     }
                         
                                     if(name.This.QualifiedCppName.includes('GlobalNamespace::')){
-                                        fs.writeFileSync(__dirname + '/data/codegen/data/'+nameInput.value + input.files[0].name.replace('.apk', '')+'/' + name.This.Name + '.json', JSON.stringify(name));
+                                        fs.writeFileSync(__filepath + '/data/codegen/data/'+nameInput.value + input.files[0].name.replace('.apk', '')+'/' + name.This.Name + '.json', JSON.stringify(name));
                                         namesList.push(name.This.Name);
                                     } else{
                                         if(isDot){
-                                            fs.writeFileSync(__dirname + '/data/codegen/data/'+nameInput.value + input.files[0].name.replace('.apk', '')+'/' + (name.This.QualifiedCppName.split('::').join('.')).replace('.', '') + '.json', JSON.stringify(name));
+                                            fs.writeFileSync(__filepath + '/data/codegen/data/'+nameInput.value + input.files[0].name.replace('.apk', '')+'/' + (name.This.QualifiedCppName.split('::').join('.')).replace('.', '') + '.json', JSON.stringify(name));
                                             namesList.push((name.This.QualifiedCppName.split('::').join('.')).replace('.', ''));
                                         } else{
-                                            fs.writeFileSync(__dirname + '/data/codegen/data/'+nameInput.value + input.files[0].name.replace('.apk', '')+'/' + (name.This.QualifiedCppName.split('::').join('.')) + '.json', JSON.stringify(name));
+                                            fs.writeFileSync(__filepath + '/data/codegen/data/'+nameInput.value + input.files[0].name.replace('.apk', '')+'/' + (name.This.QualifiedCppName.split('::').join('.')) + '.json', JSON.stringify(name));
                                             namesList.push((name.This.QualifiedCppName.split('::').join('.')).join('.'));
                                         }
                                     }
@@ -192,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             })
 
                             console.log(namesList);
-                            fs.writeFileSync(__dirname + '/data/codegen/names/'+nameInput.value + input.files[0].name.replace('.apk', '')+'.json', JSON.stringify(namesList));
+                            fs.writeFileSync(__filepath + '/data/codegen/names/'+nameInput.value + input.files[0].name.replace('.apk', '')+'.json', JSON.stringify(namesList));
 
                             document.querySelector('.log-bar').innerHTML = '🟠 Done, No Tasks Left.';
                             document.querySelector('#versionInsaller').style.display = 'none';
@@ -200,6 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             bodies.forEach((b, i) => {
                                 b.style.top = 'calc(50px + ' + (i - 4) * 100 + '%)';
                             })
+                            ipcRenderer.send('fetchConfig');
                         }
 
                         ipcRenderer.send('log', JSON.stringify({ type: 'info', log: chunk.toString() }));
@@ -296,7 +325,7 @@ let loadClass = ( name ) => {
     document.querySelector('.class-container').style.textAlign = 'center';
     document.querySelector('.class-container').innerHTML = 'Loading '+name+'...';
 
-    let data = JSON.parse(fs.readFileSync(__dirname + '/data/codegen/data/'+currentVersion+'/'+name+'.json'));
+    let data = JSON.parse(fs.readFileSync(__filepath + '/data/codegen/data/'+currentVersion+'/'+name+'.json'));
     console.log(data);
 
     let text = '';
@@ -310,8 +339,8 @@ let loadClass = ( name ) => {
     text += 'Is Nested: '+data.This.IsNested+'<br />';
     text += 'Is Generic Template: '+data.This.IsGenericTemplate+'<br />';
 
-    console.log('Checking: ' + __dirname + '/data/codegen/cpp/'+currentVersion+'/'+getNamespaceNoDot(data.This.QualifiedCppName.split('::')[1])+'/'+data.This.QualifiedCppName.split('::')[2]+'.hpp for header files');
-    if(fs.existsSync(__dirname + '/data/codegen/cpp/'+currentVersion+'/'+getNamespaceNoDot(data.This.QualifiedCppName.split('::')[1])+'/'+data.This.QualifiedCppName.split('::')[2]+'.hpp'))
+    console.log('Checking: ' + __filepath + '/data/codegen/cpp/'+currentVersion+'/'+getNamespaceNoDot(data.This.QualifiedCppName.split('::')[1])+'/'+data.This.QualifiedCppName.split('::')[2]+'.hpp for header files');
+    if(fs.existsSync(__filepath + '/data/codegen/cpp/'+currentVersion+'/'+getNamespaceNoDot(data.This.QualifiedCppName.split('::')[1])+'/'+data.This.QualifiedCppName.split('::')[2]+'.hpp'))
         text += '<span class="link" body="5">View Header Source</span><br />';
 
     text += '<br /><div><input type="checkbox">Display JSON Code.<div class="code json">'+formatJSON(data.This)+'</div></div>'
@@ -349,8 +378,8 @@ let loadClass = ( name ) => {
             })
         });
 
-    if(fs.existsSync(__dirname + '/data/codegen/cpp/'+currentVersion+'/'+getNamespaceNoDot(data.This.QualifiedCppName.split('::')[1])+'/'+data.This.QualifiedCppName.split('::')[2]+'.hpp')){
-        let headerFile = fs.readFileSync(__dirname + '/data/codegen/cpp/'+currentVersion+'/'+getNamespaceNoDot(data.This.QualifiedCppName.split('::')[1])+'/'+data.This.QualifiedCppName.split('::')[2]+'.hpp');
+    if(fs.existsSync(__filepath + '/data/codegen/cpp/'+currentVersion+'/'+getNamespaceNoDot(data.This.QualifiedCppName.split('::')[1])+'/'+data.This.QualifiedCppName.split('::')[2]+'.hpp')){
+        let headerFile = fs.readFileSync(__filepath + '/data/codegen/cpp/'+currentVersion+'/'+getNamespaceNoDot(data.This.QualifiedCppName.split('::')[1])+'/'+data.This.QualifiedCppName.split('::')[2]+'.hpp');
 
         document.querySelector('#header-file').innerHTML = colourCode(headerFile.toString());
         document.querySelector('.code-header').innerHTML = getNamespaceNoDot(data.This.QualifiedCppName.split('::')[1])+'/'+data.This.QualifiedCppName.split('::')[2]+'.hpp';

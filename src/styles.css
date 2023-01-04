@@ -596,3 +596,11 @@ input[type="checkbox"]:checked ~ .json{
     align-items: center;
     justify-content: center;
 }
+
+.version-information{
+    position: fixed;
+    top: 17px;
+    left: 10px;
+    color: white;
+    z-index: 120;
+}

@@ -2,17 +2,27 @@ const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const { spawn } = require('child_process');
 const fetch = require('node-fetch');
 const fs = require('fs');
+const http = require('http');
+const shortcuts = require('windows-shortcuts');
+const path = require('path');
 
 let config = {
     appVersion: '0.0.1',
     versions: [],
-    position: { x: 0, y: 0 }
+    position: { x: 0, y: 0 },
+    devBuild: false
 }
 
 if(!fs.existsSync(__dirname + '/config.json'))  
     fs.writeFileSync(__dirname + '/config.json', JSON.stringify(config));
 else
     config = JSON.parse(fs.readFileSync(__dirname + '/config.json'));
+
+if(!config.devBuild)shortcuts.create('%APPDATA%/Microsoft/Windows/Start Menu/Programs/Codegen Browser.lnk', {
+    target: path.join(__dirname, '../../../../codegenbrowser.exe'),
+    desc: 'Codegen Browser',
+    icon: __dirname + '/imgs/browser.png'
+});
 
 let logs = [];
 let win;
@@ -36,6 +46,8 @@ app.on('ready', () => {
     })
     
     win.loadFile(__dirname + '/index.html');
+    win.setTitle('Codegen Browser');
+    win.setIcon(__dirname + '/imgs/browser.png');
 
     ipcMain.on('load', () => {
         logs.push({ type: 'info', log: 'Window Loaded.' });
