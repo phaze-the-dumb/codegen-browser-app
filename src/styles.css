@@ -248,6 +248,7 @@ body{
     height: calc(100% - 50px);
     text-align: center;
     transition: 0.25s;
+    overflow: auto;
 }
 
 .body-addversion{
@@ -589,7 +590,7 @@ input[type="checkbox"]:checked ~ .json{
     height: 50px;
     width: 100%;
     background: gray;
-    color: black; 
+    color: black;
     box-shadow: black 0 0 5px;
     z-index: 80;
     display: flex;
@@ -603,4 +604,24 @@ input[type="checkbox"]:checked ~ .json{
     left: 10px;
     color: white;
     z-index: 120;
+}
+
+.short-code{
+    padding: 4px;
+    background: rgb(146, 146, 146);
+    box-shadow: black 0 0 5px;
+    display: inline-block;
+    margin: 5px;
+}
+
+.update-notification{
+    position: fixed;
+    bottom: 10px;
+    right: -100%;
+    background: rgb(146, 146, 146);
+    box-shadow: black 0 0 5px;
+    padding: 10px;
+    transition: 0.25s;
+    cursor: pointer;
+    user-select: none;
 }

@@ -1,8 +1,5 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
-const { spawn } = require('child_process');
-const fetch = require('node-fetch');
 const fs = require('fs');
-const http = require('http');
 const shortcuts = require('windows-shortcuts');
 const path = require('path');
 
@@ -80,10 +77,6 @@ app.on('ready', () => {
             config.versions.push(value)
             fs.writeFileSync(__dirname + '/config.json', JSON.stringify(config));
         }
-    })
-
-    ipcMain.on('loadVersion', ( e, version ) => {
-        win.webContents.send('loadVersion', fs.readFileSync(__dirname + '/data/codegen/names/'+version+'.json').toString())
     })
 
     ipcMain.on('openLink', ( event, link ) =>

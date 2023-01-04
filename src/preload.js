@@ -20,6 +20,22 @@ if(!fs.existsSync(__filepath))
     fs.mkdirSync(__filepath)
 
 document.addEventListener('DOMContentLoaded', () => {
+    fetch('https://api.github.com/repos/phaze-the-dumb/codegen-browser-app/releases').then(data => data.json()).then(data => {
+        if(data[0].tag_name !== require('./config.json').appVersion){
+            let notif = document.createElement('div');
+            notif.className = 'update-notification';
+            notif.innerHTML = 'New version found, Click here to download it.';
+            notif.onclick = () => 
+                ipcRenderer.send('openLink', data[0].html_url);
+
+            document.body.appendChild(notif);
+
+            setTimeout(() => {
+                notif.style.right = '10px';
+            }, 10)
+        }
+    })
+
     document.querySelector('.minimise-container').onclick = () => ipcRenderer.send('minimise');
     document.querySelector('.close-container').onclick = () => ipcRenderer.send('close');
     document.querySelector('.log-bar').onclick = () => 
@@ -27,13 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('.log-close').onclick = () => 
         document.querySelector('.log-box').style.left = '150%';
 
-    if(devBuild){
-        document.querySelector('#setting-installlocation').innerText = __dirname;
-        document.querySelector('#setting-datalocation').innerText = __filepath;
-    } else{
-        document.querySelector('#setting-installlocation').remove();
-        document.querySelector('#setting-datalocation').remove();
-    }
+    document.querySelector('#setting-installlocation').innerText = __dirname;
+    document.querySelector('#setting-datalocation').innerText = __filepath;
+    document.querySelector('#setting-version').innerText = require('./config.json').appVersion;
 
     let dotnetTest = spawn('dotnet');
     let didDotnetError = false;
@@ -290,33 +302,32 @@ ipcRenderer.on('fetchConfig', ( e, config ) => {
     let text = '';
     config.versions.forEach(ver => {
         console.log(ver)
-        text += '<div class="version-header" id="'+ver.name.split('.').join('')+'-loadbtn">' + ver.name + '</div>';
+        text += '<div class="version-header" id="'+ver.name+'-loadbtn">' + ver.name + '</div>';
     })
 
     document.querySelector('.version-list').innerHTML = text;
 
     config.versions.forEach(ver => {
-        document.getElementById(ver.name.split('.').join('')+'-loadbtn').onclick = () => {
+        document.getElementById(ver.name+'-loadbtn').onclick = () => {
             currentVersion = ver.path;
-            ipcRenderer.send('loadVersion', ver.path);
-        }
-    })
-})
+            let names = fs.readFileSync(__filepath + '/data/codegen/names/'+ver.path+'.json').toString();
+            console.log(names);
 
-ipcRenderer.on('loadVersion', ( e, names ) => {
-    names = JSON.parse(names);
-    nameLists = names;
+            names = JSON.parse(names);
+            nameLists = names;
 
-    let text = '';
-    names.forEach(name => {
-        text += '<div class="name" id="loadclass-'+name+'">'+name+'</div>';
-    })
+            let text = '';
+            names.forEach(name => {
+                text += '<div class="name" id="loadclass-'+name+'">'+name+'</div>';
+            })
 
-    document.querySelector('.names-container').innerHTML = text;
+            document.querySelector('.names-container').innerHTML = text;
 
-    names.forEach(name => {
-        document.getElementById('loadclass-'+name).onclick = () => {
-            loadClass(name);
+            names.forEach(name => {
+                document.getElementById('loadclass-'+name).onclick = () => {
+                    loadClass(name);
+                }
+            })
         }
     })
 })
