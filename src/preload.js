@@ -392,7 +392,7 @@ let loadClass = ( name ) => {
             args.push(p.Name + ': ' + p.Type.Namespace + '.' + p.Type.Name)
         })
 
-        text += '<div class="cls">' + method.Name + '(' + args.join(', ') + '): <span class="TypeName">' + getNamespace(method.ReturnType.Namespace) + method.ReturnType.Name + '</span><br /><input type="checkbox">Display JSON Code.<div class="code json">'+formatJSON(method)+'</div></div><br />';
+        text += '<div class="cls">' + method.Name + '(' + args.join(', ') + '): <span class="TypeName">' + getNamespace(method.ReturnType.Namespace) + method.ReturnType.Name + '</span><br /><input type="checkbox">Display JSON Code.<div class="code json">'+formatJSON(method)+'</div><br /><input type="checkbox">Display Hook.<div class="code json">'+getMethodHook(name, method)+'</div></div><br />';
     })
 
     text += '<br />';
@@ -515,4 +515,52 @@ let colourCode = ( data ) => {
     });
 
     return text;
+}
+
+let getMethodHook = ( cls, method ) => {
+    let argsText = '';
+        let includesText = '';
+        let args = [];
+
+        method.Parameters.forEach((param, i) => {
+            args.push(param.Name)
+
+            if(i + 1 === method.Parameters.length){
+                if(param.Type.Namespace === ''){
+                    includesText += '#include "GlobalNamespace/' + param.Type.Name + '.hpp"\n'
+                    argsText += '    '+param.Type.Name + '* ' + param.Name
+                } else{
+                    if(getNamespace(param.Type.Namespace) !== '')
+                        argsText += '    '+getNamespace(param.Type.Namespace) + '::' + param.Type.Name + ' ' + param.Name
+                    else
+                        argsText += '    '+getName(param.Type.Name) + ' ' + param.Name + ',\n'
+                }
+            } else{
+                if(param.Type.Namespace === ''){
+                    includesText += '#include "GlobalNamespace/' + param.Type.Name + '.hpp"\n'
+                    argsText += '    '+param.Type.Name + '* ' + param.Name + ',\n'
+                } else{
+                    if(getNamespace(param.Type.Namespace) !== '')
+                        argsText += '    '+getNamespace(param.Type.Namespace) + '::' + param.Type.Name + ' ' + param.Name + ',\n'
+                    else
+                        argsText += '    '+getName(param.Type.Name) + ' ' + param.Name + ',\n'
+                }
+            }
+        })
+
+        return colourCode(`// INCLUDES ARE A WIP FEATURE DO NOT TRUST THE OUTPUT OF THIS
+#include "GlobalNamespace/${cls}.hpp"
+${includesText}
+
+// DOUBLE CHECK THE STARS ARE IN THE CORRECT PLACE IT DOESN'T ALWAYS GET THEM RIGHT
+MAKE_HOOK_MATCH(${cls}_${method.Name}, ${cls}::${method.Name}, ${method.ReturnType.Namespace}::${method.ReturnType.Name},
+    ${cls}* self,
+${argsText}
+) {
+
+
+    ${cls}_${method.Name}(${args.join(', ')});
+}
+
+INSTALL_HOOK(logger, ${cls}_${method.Name});`);
 }
