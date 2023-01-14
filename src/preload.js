@@ -15,6 +15,9 @@ let __filepath = path.join(__dirname, '../../../../data')
 
 if(devBuild)
     __filepath = path.join(__dirname, '../data')
+    
+if(require('./config.json').changedPath !== '')
+    __filepath = require('./config.json').changedPath;
 
 if(!fs.existsSync(__filepath))
     fs.mkdirSync(__filepath)
@@ -153,10 +156,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
 
                 il2cpp.stderr.on('data', ( chunk ) => {
-                    ipcRenderer.send('warn', JSON.stringify({ type: 'info', log: chunk.toString() }));
+                    ipcRenderer.send('log', JSON.stringify({ type: 'warn', log: chunk.toString() }));
                 })
 
-                il2cpp.on('close', () => {
+                il2cpp.on('error', ( error ) => {
+                    ipcRenderer.send('log', JSON.stringify({ type: 'error', log: error.toString() }));
+                })
+
+                il2cpp.on('close', ( ilcode ) => {
+                    ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Il2cppDumper closed with code: ' + ilcode }));
+
                     document.querySelector('.log-bar').innerHTML = '🟠 No Tasks.';
                     ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Finished Dumping DLLs' }));
 
@@ -249,7 +258,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     })
 
                     cgen.stderr.on('data', ( chunk ) => {
-                        ipcRenderer.send('warn', JSON.stringify({ type: 'info', log: chunk.toString() }));
+                        ipcRenderer.send('log', JSON.stringify({ type: 'warn', log: chunk.toString() }));
+                    })
+
+                    cgen.on('close', ( code ) => {
+                        ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Codegen closed with code: ' + code }));
+                    })
+
+                    cgen.on('error', ( error ) => {
+                        ipcRenderer.send('log', JSON.stringify({ type: 'error', log: error.toString() }));
+                        ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Codegen caused an error, please try again or report a bug on the github.' }));
                     })
                 })
             }).catch(e => {
@@ -259,6 +277,153 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         reader.readAsArrayBuffer(input.files[0]);
+    }
+
+    document.querySelector('#setting-datalocation-edit').onclick = () => {
+        document.querySelector('#setting-datalocation-change').style.display = 'inline-block';
+        document.querySelector('#setting-datalocation-confirm').style.display = 'inline-block';
+        document.querySelector('#setting-datalocation-cancel').style.display = 'inline-block';
+        document.querySelector('#setting-datalocation').style.display = 'none';
+        document.querySelector('#setting-datalocation-edit').style.display = 'none';
+    }
+
+    document.querySelector('#setting-datalocation-cancel').onclick = () => {
+        document.querySelector('#setting-datalocation-change').value = '';
+        document.querySelector('#setting-datalocation-change').style.display = 'none';
+        document.querySelector('#setting-datalocation-confirm').style.display = 'none';
+        document.querySelector('#setting-datalocation-cancel').style.display = 'none';
+        document.querySelector('#setting-datalocation').style.display = 'inline-block';
+        document.querySelector('#setting-datalocation-edit').style.display = 'inline-block';
+    }
+
+    document.querySelector('#setting-datalocation-confirm').onclick = () => {
+        let newPath = document.querySelector('#setting-datalocation-change').value;
+
+        try{
+            if(!fs.existsSync(newPath)){
+                ipcRenderer.send('log', JSON.stringify({ type: 'warn', log: 'Cannot Find Path: '+newPath }));
+                document.querySelector('#setting-datalocation-change').style.borderBottom = 'red 2px solid';
+
+                return;
+            } else{
+                ipcRenderer.send('config', 'updatePath', newPath);
+
+                document.querySelector('#setting-datalocation').innerHTML = path.resolve(newPath);
+                document.querySelector('.log-bar').innerHTML = '🔴 Path updated, please restart the app...';
+            }
+        } catch(e){
+            ipcRenderer.send('log', JSON.stringify({ type: 'error', log: e.toString() }));
+        }
+        
+        document.querySelector('#setting-datalocation-change').style.display = 'none';
+        document.querySelector('#setting-datalocation-confirm').style.display = 'none';
+        document.querySelector('#setting-datalocation-cancel').style.display = 'none';
+        document.querySelector('#setting-datalocation').style.display = 'inline-block';
+        document.querySelector('#setting-datalocation-edit').style.display = 'inline-block';
+        document.querySelector('#setting-datalocation-change').value = '';
+    }
+
+    document.querySelector('#setting-checkdata').onclick = () => {
+        document.querySelector('.log-box').style.left = '50%';
+        ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Checking Version Config...' }));
+
+        let versions = fs.readdirSync(__filepath + '/data/codegen/data');
+        let verConfig = require(__filepath + '/versions.json');
+        
+        versions.forEach(verfolder => {
+            if(verConfig.find(x => x.path === verfolder))
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Found: '+verfolder+' (In Config)' }));
+            else {
+                ipcRenderer.send('log', JSON.stringify({ type: 'warn', log: 'Found: '+verfolder+' (Not In Config)' }));
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Gussing Version Name For "'+verfolder+'" as "'+getVersionName(verfolder)+'"' }));
+
+                verConfig.push({ name: getVersionName(verfolder), path: verfolder });
+            }
+        })
+
+        ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Checking For Duplicates...' }));
+
+        let duplicatedFound = 0;
+        let vers = [];
+
+        verConfig.forEach(ver => {
+            if(vers.find(x => x.path === ver.path)){
+                ipcRenderer.send('log', JSON.stringify({ type: 'warn', log: 'Found Dulplicate: '+ver.path }));
+                duplicatedFound++;
+            } else
+                vers.push(ver);
+        })
+
+        if(duplicatedFound === 0)
+            ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'No Duplicates Found!' }));
+        else if(duplicatedFound === 1)
+            ipcRenderer.send('log', JSON.stringify({ type: 'info', log: '1 Duplicate Found!' }));
+        else
+            ipcRenderer.send('log', JSON.stringify({ type: 'info', log: duplicatedFound+' Duplicates Found!' }));
+
+        ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Updating Config' }));
+        fs.writeFileSync(__filepath + '/versions.json', JSON.stringify(vers));
+        ipcRenderer.send('reloadVersions');
+    }
+
+    document.querySelector('#setting-deletetemp').onclick = () => {
+        document.querySelector('.log-box').style.left = '50%';
+        ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Checking For Temp Files...' }));
+        let didFail = false;
+
+        fs.readdirSync(__filepath + '/data/apks').forEach(file => {
+            try{
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Removing Apk: "'+file+'"...' }));
+                fs.unlinkSync(__filepath + '/data/apks/'+file);
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Finished Removing Apk: "'+file+'"...' }));
+            } catch(e){
+                console.error(e);
+                ipcRenderer.send('log', JSON.stringify({ type: 'warn', log: 'Failed Removing Apk: "'+file+'".' }));
+                didFail = true;
+            }
+        })
+
+        fs.readdirSync(__filepath + '/data/extracted').forEach(file => {
+            try{
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Removing Extracted Apk: "'+file+'"...' }));
+                fs.rmSync(__filepath + '/data/extracted/'+file, { recursive: true });
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Finished Removing Extracted Apk: "'+file+'"...' }));
+            } catch(e){
+                console.error(e);
+                ipcRenderer.send('log', JSON.stringify({ type: 'warn', log: 'Failed Removing Extracted Apk: "'+file+'".' }));
+                didFail = true;
+            }
+        })
+
+        try{
+            if(fs.existsSync(__filepath + '/data/codegen/json_output/parsed.json')){
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Removing Codegen JSON Output...' }));
+                fs.unlinkSync(__filepath + '/data/codegen/json_output/parsed.json');
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Finished Removing Codegen JSON Output...' }));
+            }
+        } catch(e){
+            console.error(e);
+            ipcRenderer.send('log', JSON.stringify({ type: 'warn', log: 'Failed Removing Codegen JSON Output.' }));
+            didFail = true;
+        }
+        
+        try{
+            if(fs.existsSync(__filepath + '/data/codegen/output')){
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Removing Codegen Header Output...' }));
+                fs.rmSync(__filepath + '/data/codegen/output', { recursive: true });
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Finished Removing Codegen Header Output...' }));
+            }
+        } catch(e){
+            console.error(e);
+            ipcRenderer.send('log', JSON.stringify({ type: 'warn', log: 'Failed Removing Codegen Header Output.' }));
+            didFail = true;
+        }
+
+        if(didFail){
+            ipcRenderer.send('log', JSON.stringify({ type: 'warn', log: 'Some actions have failed, try running the app as administrator, or report a bug on the github. CHECK THE CONSOLE (ctrl + shift + i)' }));
+        } else{
+            ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Finished, that should have cleared some space.' }));
+        }
     }
 
     ipcRenderer.send('load');
@@ -354,6 +519,22 @@ ipcRenderer.on('fetchConfig', ( e, config ) => {
         }
     })
 })
+
+let getVersionName = ( name ) => {
+    let output = '';
+    let stillName = true;
+
+    name.split('').forEach(n => {
+        if(stillName = true){
+            if(isNaN(parseInt(n)) && n !== '.')
+                return stillName = false;
+
+            output += n;
+        }
+    })
+
+    return output;
+}
 
 let loadClass = ( name ) => {
     document.querySelector('.class-container').style.textAlign = 'center';

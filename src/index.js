@@ -6,7 +6,8 @@ const path = require('path');
 let config = {
     appVersion: '0.1.2-beta',
     position: { x: 0, y: 0 },
-    devBuild: false
+    devBuild: false,
+    changedPath: ''
 }
 
 let versions = [];
@@ -19,7 +20,7 @@ else
 if(!config.devBuild)shortcuts.create('%APPDATA%/Microsoft/Windows/Start Menu/Programs/Codegen Browser.lnk', {
     target: path.join(__dirname, '../../../../codegenbrowser.exe'),
     desc: 'Codegen Browser',
-    icon: __dirname + '/imgs/browser.png'
+    icon: __dirname + '/imgs/browser.ico'
 });
 
 let __filepath = path.join(__dirname, '../../../../data')
@@ -27,8 +28,11 @@ let __filepath = path.join(__dirname, '../../../../data')
 if(config.devBuild)
     __filepath = path.join(__dirname, '../data')
 
+if(config.changedPath !== '')
+    __filepath = config.changedPath;
+
 if(!fs.existsSync(__filepath))
-    fs.mkdirSync(__filepath)
+    fs.mkdirSync(__filepath, { recursive: true });
 
 if(!fs.existsSync(__filepath + '/versions.json'))
     fs.writeFileSync(__filepath + '/versions.json', JSON.stringify(versions));
@@ -91,8 +95,16 @@ app.on('ready', () => {
             versions.push(value)
             fs.writeFileSync(__filepath + '/versions.json', JSON.stringify(versions));
         }
+
+        if(cmd === 'updatePath'){
+            config.changedPath = value;
+            fs.writeFileSync(__dirname + '/config.json', JSON.stringify(config));
+        }
     })
 
     ipcMain.on('openLink', ( event, link ) =>
         shell.openExternal(link));
+
+    ipcMain.on('reloadVersions', () => 
+        versions = JSON.parse(fs.readFileSync(__filepath + '/versions.json')))
 })

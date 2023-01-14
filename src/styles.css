@@ -625,3 +625,14 @@ input[type="checkbox"]:checked ~ .json{
     cursor: pointer;
     user-select: none;
 }
+
+.button{
+    background: gray;
+    padding: 5px;
+    margin: 0 20px;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: black 0 0 10px;
+    border-radius: 5px;
+    display: inline-block;
+}

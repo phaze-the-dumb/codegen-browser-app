@@ -51,8 +51,14 @@
 
             <p style="text-align: left; padding: 20px;">
                 Install Location: <span id="setting-installlocation" class="short-code"></span><br />
-                Data Location: <span id="setting-datalocation" class="short-code"></span><br />
+                Data Location: <span id="setting-datalocation" class="short-code"></span> <span class="link" id="setting-datalocation-edit">Edit</span>
+                <input placeholder="C:/some/fucking/path/idk" id="setting-datalocation-change" type="text" style="width: 400px; display: none;">
+                <span class="link" id="setting-datalocation-confirm" style="display: none;">Confirm</span> <span class="link" id="setting-datalocation-cancel" style="display: none;">Cancel</span>
+                <br />
                 Version: <span id="setting-version" class="short-code"></span><br />
+                <div class="button" id="setting-checkdata">Check Config Data</div>
+                <div class="button" id="setting-deletetemp">Delete Temp Files</div>
+                <div class="button" link="https://github.com/phaze-the-dumb/codegen-browser-app/issues">Bug Report</div>
             </p>
         </div>
 
