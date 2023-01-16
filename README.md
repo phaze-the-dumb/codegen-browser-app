@@ -53,3 +53,13 @@ If you have any issues and you can't find any fixes for them feel free to create
 Application logs can be accessed by clicking the status bar in the top left
 
 Electron logs can be accessed by pressing `ctrl` + `shift` + `i` and chromes devtools should open, click the console tab at the top to access the logs.
+
+## Transfering Generated Data
+
+In the settings menu there is a folder path called "Data Path" in the path there is a file called "versions.json" and a folder called "data" copy and paste the folder into your file transfer method of choice 
+
+**Note: you can remove some of the files here by clicking the "Delete Temp Files" button in the settings of the application**
+
+**Note: the data folder may be over a gb if you have multiple versions installed**
+
+When the other person downloads this folder they need to find the data file path in the settings menu and then put the folder in there, once the files are in that folder you can click "Check Config Data" this should add the new version data into the versions.json file.
