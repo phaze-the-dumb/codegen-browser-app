@@ -39,8 +39,17 @@ While you are adding a new version there will be a new menu called "Version Inst
 Depending on what the error is there could be multiple issues / fixes, if your issue isn't described here please create a new issue on this github repo (you can also find the issues page by clicking the "report bug" button in the settings page) refer to the "Creating Issues" section when writing an issue
 
 `You must install or update dotnet to run this application`
+
 Download the latest version of dotnet from [here](https://dotnet.microsoft.com/)
 
 Notes:
 - I will add issues and their fixes here as they come up
 - Warnings that *don't* stop codegen from running are not an issue, they happen
+
+## Creating Issues
+
+If you have any issues and you can't find any fixes for them feel free to create a github issue on this repo, although please make sure you describe the exact issue you are having and attach any logs, this includes application logs and electron logs
+
+Application logs can be accessed by clicking the status bar in the top left
+
+Electron logs can be accessed by pressing `ctrl` + `shift` + `i` and chromes devtools should open, click the console tab at the top to access the logs.
