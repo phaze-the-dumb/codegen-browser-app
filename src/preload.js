@@ -101,7 +101,65 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
     document.querySelector('.next-btn').onclick = () => {
+        document.querySelector('.log-box').style.left = '50%';
         document.querySelector('#versionInsaller').style.display = 'block';
+        
+        ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Checking For Temp Files...' }));
+        let didFail = false;
+
+        fs.readdirSync(__filepath + '/data/apks').forEach(file => {
+            try{
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Removing Apk: "'+file+'"...' }));
+                fs.unlinkSync(__filepath + '/data/apks/'+file);
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Finished Removing Apk: "'+file+'"...' }));
+            } catch(e){
+                console.error(e);
+                ipcRenderer.send('log', JSON.stringify({ type: 'warn', log: 'Failed Removing Apk: "'+file+'".' }));
+                didFail = true;
+            }
+        })
+
+        fs.readdirSync(__filepath + '/data/extracted').forEach(file => {
+            try{
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Removing Extracted Apk: "'+file+'"...' }));
+                fs.rmSync(__filepath + '/data/extracted/'+file, { recursive: true });
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Finished Removing Extracted Apk: "'+file+'"...' }));
+            } catch(e){
+                console.error(e);
+                ipcRenderer.send('log', JSON.stringify({ type: 'warn', log: 'Failed Removing Extracted Apk: "'+file+'".' }));
+                didFail = true;
+            }
+        })
+
+        try{
+            if(fs.existsSync(__filepath + '/data/codegen/json_output/parsed.json')){
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Removing Codegen JSON Output...' }));
+                fs.unlinkSync(__filepath + '/data/codegen/json_output/parsed.json');
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Finished Removing Codegen JSON Output...' }));
+            }
+        } catch(e){
+            console.error(e);
+            ipcRenderer.send('log', JSON.stringify({ type: 'warn', log: 'Failed Removing Codegen JSON Output.' }));
+            didFail = true;
+        }
+        
+        try{
+            if(fs.existsSync(__filepath + '/data/codegen/output')){
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Removing Codegen Header Output...' }));
+                fs.rmSync(__filepath + '/data/codegen/output', { recursive: true });
+                ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Finished Removing Codegen Header Output...' }));
+            }
+        } catch(e){
+            console.error(e);
+            ipcRenderer.send('log', JSON.stringify({ type: 'warn', log: 'Failed Removing Codegen Header Output.' }));
+            didFail = true;
+        }
+
+        if(didFail){
+            ipcRenderer.send('log', JSON.stringify({ type: 'warn', log: 'Some actions have failed, try running the app as administrator, or report a bug on the github. CHECK THE CONSOLE (ctrl + shift + i)' }));
+        } else{
+            ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Finished, that should have cleared some space.' }));
+        }
 
         document.querySelector('.log-bar').innerHTML = '🟢 Uploading APK...';
         ipcRenderer.send('log', JSON.stringify({ type: 'info', log: 'Uploading APK' }));
